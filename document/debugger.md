@@ -1,7 +1,7 @@
 Debugger
 ---
 
-#### Run code in qemu with debugger 
+## Run code in qemu with debugger
 - Compile
   ```sh
   # -g: reserve debugging information.

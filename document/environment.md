@@ -1,7 +1,7 @@
 Environment Setup
 ---
 
-#### Qemu: I built on wsl2. It may be easier in ubuntu VM.
+## Qemu: I built on wsl2. It may be easier in ubuntu VM.
 - Install dependency
   ```sh
   sudo apt update
@@ -28,13 +28,13 @@ Environment Setup
 - Build Qemu
   - Follow the [website](https://www.qemu.org/download/) to build latest qemu.
 
-### Tools in aarch64 linux environment
+## Tools in aarch64 linux environment
 - Install tools
   ```sh
   sudo apt-get install gcc-aarch64-linux-gnu
   ```
 
-### Debugger
+## Debugger
 - Install cross platform debugger
   ```sh
   sudo apt install gdb-multiarch
