@@ -21,7 +21,7 @@ void shell() {
         uart_gets(command, sizeof(command));
 
         if (strcmp(command, "help") == 0) {
-            uart_puts("help\t: print this help memu\n");
+            uart_puts("help\t: print this help menu\n");
             uart_puts("hello\t: print Hello World!\n");
             uart_puts("info\t: print machine information from mailbox\n");
             uart_puts("reboot\t: reboot the device\n");
