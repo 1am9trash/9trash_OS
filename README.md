@@ -1,7 +1,7 @@
 9trash OS
 ---
 
-A simple operating system frim scratch runs on Raspberry Pi 3 Model B.
+A simple operating system from scratch runs on Raspberry Pi 3 Model B. \
 Self-learning project based on [NYCU OSDI Spring 2022 course](https://oscapstone.github.io/).
 
 ## Document
