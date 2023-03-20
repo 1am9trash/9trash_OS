@@ -17,12 +17,16 @@ OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.s=$(DES_DIR)/%_asm.o)
 .PHONY: clean build debug run
 
 run: build
-	qemu-system-aarch64 -M raspi3b -kernel $(DES_DIR)/kernel8.img -initrd $(DES_DIR)/initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -serial null -serial stdio
+	qemu-system-aarch64 -M raspi3b -kernel $(DES_DIR)/kernel8.img -initrd $(DES_DIR)/initramfs.cpio -serial null -serial stdio
 
 debug: build
-	qemu-system-aarch64 -M raspi3b -kernel $(DES_DIR)/kernel8.img -initrd $(DES_DIR)/initramfs.cpio -dtb bcm2710-rpi-3-b-plus.dtb -serial null -serial stdio -s -S
+	qemu-system-aarch64 -M raspi3b -kernel $(DES_DIR)/kernel8.img -initrd $(DES_DIR)/initramfs.cpio -serial null -serial stdio -s -S
 
-build: clean $(DES_DIR)/kernel8.img $(DES_DIR)/initramfs.cpio
+build: clean $(DES_DIR)/kernel8.img $(DES_DIR)/user.elf $(DES_DIR)/initramfs.cpio 
+
+$(DES_DIR)/user.elf:
+	mkdir -p $(dir $@)
+	cd user_program && make build
 
 $(DES_DIR)/initramfs.cpio:
 	mkdir -p $(dir $@)
@@ -42,4 +46,5 @@ $(DES_DIR)/kernel8.img: $(OBJ_FILES)
 	$(OBJCPY) -O binary $(DES_DIR)/kernel8.elf $(DES_DIR)/kernel8.img
 
 clean:
+	cd user_program && make clean
 	rm -rf $(DES_DIR) || true

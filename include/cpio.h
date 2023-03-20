@@ -3,7 +3,7 @@
 
 #include "stdint.h"
 
-uint64_t CPIO_BASE;
+#define CPIO_BASE 0x8000000
 
 struct cpio_newc_header {
     char c_magic[6];
@@ -22,10 +22,10 @@ struct cpio_newc_header {
     char c_check[8];
 };
 
-void set_initrd_address(char *node_name, char *property_name, char *property_value);
 char *cpio_get_filename(struct cpio_newc_header *p);
 struct cpio_newc_header *cpio_get_first_file();
 struct cpio_newc_header *cpio_get_next_file(struct cpio_newc_header *p);
+void *cpio_get_file_address(char *filename);
 void cpio_read_file(struct cpio_newc_header *p, uint32_t offset, char *buf, uint32_t size);
 void ls();
 void cat();

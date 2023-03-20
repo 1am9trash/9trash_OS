@@ -1,22 +1,42 @@
-Lab 2
+Lab 3
 ---
 
-## Initial Ramdisk
-- 可透過`cpio`指令將folder壓縮成file system的格式，導入機器，再行處理
-- "TRAILER!!!"為最後一個檔案的名稱，遇到代表遍歷到結尾
-- qemu中，initrd被放在`0x8000000`的位置上，後續處理好Device Tree後，可從dtb中讀取initrd的位置，不必寫死
+## Exception Handling
+- `el2`
+  - 開始執行時，默認在`el2`
+  - 初始化`bss`(可在`el1`做)
+- `el1`
+  - 設置exception vector table: 將table address放到`vbar_el1`
+  - enable timer
+- `el0`
+  - enable uart(可在`el1`做)
+  - 執行`main()`
+- `eret`
+  - 不同`el`跳轉需使用`eret`
+  - 設置`spsr_elx`: 儲存process status
+  - 設置`elr_elx`: 決定跳轉後位置
 
-## Simple Allocator
-- 簡易的`malloc`，一開始切割一塊記憶體後續用來分配
-- 可驗證之前`reboot`指令的正確性
+## Interrupt
+- 由於將程式放在`el0`中執行，因此所有需要權限的操作都要透過interrupt提升`el`
+- interrupt進入時，會根據exception vector table進入`irq_router()`，並執行對應的handler
 
-## Device Tree
-- dtb的address預設會被存在x0中，由於start.s執行時，會將x0複寫掉，因此需要先將dtb的address load到其他一塊記憶體，方便讀取
-- dtb中，為32 bit的big endian，需要轉換
-- dtb的node中，name不為空字串，最少會補到4個byte，而prop則允許空字串，但如果長度不為4的倍數，都會補到4的倍數
-- FDT_NOP是留來修改device tree的，忽略即可
-- [Device Tree Structure](http://www.wowotech.net/device_model/dt-code-file-struct-parse.html)
-- [Device Tree傳遞](https://blog.csdn.net/huang987246510/article/details/108189218)
+## User Program
+- user program會被提前編成`img`檔，透過`cpio`放入file system
+- 需要執行特定程式時，透過lab2中的`cpio.c`找到其位置並跳轉
+- 預設的user program會`svc`三個exception後`ret`
+
+## Concurrent I/O Devices
+- 之前的uart是用hard polling的方式運行，浪費大量cpu time，現在改成interrupt trigger
+- `uart_putc()`僅會將data存到write queue中，等到非同步的uart interrupt通知可以輸出時，才會真正輸出
+- 有uart輸入時，會產生非同步的uart interrupt，將data讀到read queue中，等到`uart_putc()`呼叫時，再從read queue中拿data
+
+## Some Useful Info
+- `el2 sp`: `0x80000`
+- `el1 sp`: `0x60000`
+- `el0 sp`: `0x40000`
+- initrd address: `0x8000000`
+- heap: 在`linker.ld`宣告，放在bss後 
+- timer queue: 放在heap上，也是唯一使用heap的部分，目前尚無`free()`的機制，所以記憶體會越用越少
 
 ## Makefile
 ```sh
