@@ -3,7 +3,7 @@
 
 #include "stdint.h"
 
-uint64_t CPIO_BASE;
+extern uint64_t CPIO_BASE;
 
 struct cpio_newc_header {
     char c_magic[6];

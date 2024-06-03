@@ -4,6 +4,8 @@
 #include "mem.h"
 #include "utils.h"
 
+uint64_t CPIO_BASE;
+
 void set_initrd_address(char *node_name, char *property_name, char *property_value) {
     if (strcmp(node_name, "chosen") == 0 && strcmp(property_name, "linux,initrd-start") == 0) {
         CPIO_BASE = convert_endian((uint32_t)(*property_value));
