@@ -42,7 +42,7 @@ $(DES_DIR)/%_asm.o: $(SRC_DIR)/%.s
 
 $(DES_DIR)/kernel8.img: $(OBJ_FILES)
 	mkdir -p $(dir $@)
-	$(LD) -nostdlib -nostartfiles $(OBJ_FILES) -T $(SRC_DIR)/linker.ld -o $(DES_DIR)/kernel8.elf
+	$(LD) -nostdlib $(OBJ_FILES) -T $(SRC_DIR)/linker.ld -o $(DES_DIR)/kernel8.elf
 	$(OBJCPY) -O binary $(DES_DIR)/kernel8.elf $(DES_DIR)/kernel8.img
 
 clean:

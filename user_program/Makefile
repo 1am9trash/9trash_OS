@@ -13,7 +13,7 @@ DES_DIR = ../test_file_system
 build: clean linker.ld user.s
 	mkdir -p $(DES_DIR)
 	$(CC) $(ASM_FLAGS) -c user.s -o $(DES_DIR)/user_asm.o
-	$(LD) -nostdlib -nostartfiles $(DES_DIR)/user_asm.o -T linker.ld -o $(DES_DIR)/user.elf
+	$(LD) -nostdlib $(DES_DIR)/user_asm.o -T linker.ld -o $(DES_DIR)/user.elf
 	$(OBJCPY) -O binary $(DES_DIR)/user.elf $(DES_DIR)/user.img
 
 clean:
