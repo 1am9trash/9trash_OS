@@ -4,6 +4,10 @@
 #include "string.h"
 
 void main() {
+    // uncomment to check the correctness of bss, data section
+    // static int bss_checker[128];
+    // static int data_checker[128] = {1};
+
     uart_init();
 
     uart_puts("\n");
