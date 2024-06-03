@@ -15,6 +15,9 @@ Debugger
   ```
 - Debugger
   ```sh
+  # use the following command in gdb-multiarch
+  # load debugging information
   file kernel8.elf
+  # connect to qemu
   target remote 127.0.0.1:1234
   ```
