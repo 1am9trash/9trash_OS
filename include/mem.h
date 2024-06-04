@@ -2,7 +2,7 @@
 #define _MEM_H_
 
 // HEAP_SIZE limit 131072
-#define HEAP_SIZE 0x0400
+#define HEAP_SIZE 0x04000
 
 #include "stdint.h"
 
