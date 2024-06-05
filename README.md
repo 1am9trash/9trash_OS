@@ -4,8 +4,6 @@ Lab 3
 ## Target
 - 處理 exception 。
 - 處理 interrupt ， 了解 peripherals 如何 interrupt CPU 。
-- Understand how to multiplex a timer.
-- Understand how to concurrently handle I/O devices.
 
 ## Exception
 
