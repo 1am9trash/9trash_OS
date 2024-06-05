@@ -3,8 +3,8 @@
 
 #include "stdint.h"
 
-extern void go_el0(void);
-extern void core_timer_handler(void);
+void go_el0(void);
+void core_timer_handler(void);
 
 void exception_entry();
 void lower_irq_router();
