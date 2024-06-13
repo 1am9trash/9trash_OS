@@ -2,7 +2,8 @@
 
 // save general registers to stack
 .macro save_all
-  sub sp, sp, 32 * 8
+  sub sp, sp, 16 * 17
+
   stp x0, x1, [sp ,16 * 0]
   stp x2, x3, [sp ,16 * 1]
   stp x4, x5, [sp ,16 * 2]
@@ -19,10 +20,18 @@
   stp x26, x27, [sp ,16 * 13]
   stp x28, x29, [sp ,16 * 14]
   str x30, [sp, 16 * 15]
+
+  mrs x22, elr_el1
+  mrs x23, spsr_el1
+  stp x22, x23, [sp, #16 * 16]
 .endm
 
 // load general registers from stack
 .macro load_all
+  ldp x22, x23, [sp, #16 * 16]
+  msr elr_el1, x22
+  msr spsr_el1, x23
+  
   ldp x0, x1, [sp ,16 * 0]
   ldp x2, x3, [sp ,16 * 1]
   ldp x4, x5, [sp ,16 * 2]
@@ -39,24 +48,32 @@
   ldp x26, x27, [sp ,16 * 13]
   ldp x28, x29, [sp ,16 * 14]
   ldr x30, [sp, 16 * 15]
-  add sp, sp, 32 * 8
+
+  add sp, sp, 16 * 17
 .endm
 
 exception_handler:
   save_all
-  bl exception_entry
+  bl default_exception_handler
   load_all
   eret
 
-exception_handler_lower_irq:
+exception_handler_sync:
   save_all
-  bl lower_irq_router
+  bl sync_handler
+  load_all
+  eret
+
+exception_handler_irq:
+  save_all
+  bl irq_handler
   load_all
   eret
 
 .align 11                   // vector table should be aligned to 0x800
 .global exception_vector_table
 exception_vector_table:
+  // el1t
   b exception_handler       // branch to a handler function
   .align 7                  // entry size is 0x80, .align will pad 0
   b exception_handler
@@ -66,24 +83,27 @@ exception_vector_table:
   b exception_handler
   .align 7
 
-  b exception_handler
+  // el1h
+  b exception_handler_sync
   .align 7
-  b exception_handler
-  .align 7
-  b exception_handler
-  .align 7
-  b exception_handler
-  .align 7
-
-  b exception_handler
-  .align 7
-  b exception_handler_lower_irq
+  b exception_handler_irq
   .align 7
   b exception_handler
   .align 7
   b exception_handler
   .align 7
 
+  // 64-bit el0
+  b exception_handler_sync
+  .align 7
+  b exception_handler_irq
+  .align 7
+  b exception_handler
+  .align 7
+  b exception_handler
+  .align 7
+
+  // 32-bit el0
   b exception_handler
   .align 7
   b exception_handler
@@ -97,17 +117,4 @@ exception_vector_table:
 set_exception_vector_table:
   adr x0, exception_vector_table
   msr vbar_el1, x0
-  ret
-
-.equ CORE0_TIMER_IRQ_CTRL, 0x40000040
-
-.global core_timer_enable
-core_timer_enable:
-  mov x0, 1
-  msr cntp_ctl_el0, x0      // enable
-  mrs x0, cntfrq_el0
-  msr cntp_tval_el0, x0     // set expired time
-  mov x0, 2
-  ldr x1, =CORE0_TIMER_IRQ_CTRL
-  str w0, [x1]              // unmask timer interrupt
   ret

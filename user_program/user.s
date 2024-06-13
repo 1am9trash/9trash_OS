@@ -7,7 +7,7 @@ _start:
     
 1:
     add x0, x0, 1
-    svc 0
+    svc 1234
     cmp x0, 3
     blt 1b
     ret

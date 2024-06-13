@@ -2,6 +2,7 @@
 #include "gpio.h"
 #include "aux.h"
 #include "irq.h"
+#include "exception.h"
 
 struct Queue uart_write, uart_read;
 
@@ -52,7 +53,7 @@ void uart_handler() {
     }
 }
 
-// initial mini UART and map to GPIO
+// initial mini UART and map to GPIO (may set in el1)
 void uart_init() {
     *AUX_ENABLES |= 1;      // enable mini UART
     *AUX_MU_CNTL = 0;       // disable TX, RX during configuration
@@ -83,6 +84,7 @@ void uart_init() {
 
     // setting for asynchronous read and write
     *IRQ_ENABLE_1 |= 1 << 29;
+    enable_interrupt();
     queue_init(&uart_read, 1024);
     queue_init(&uart_write, 1024);
 }

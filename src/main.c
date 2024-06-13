@@ -5,7 +5,6 @@
 #include "cpio.h"
 #include "utils.h"
 #include "exception.h"
-#include "timer.h"
 
 void shell() {
     uart_puts("\n");
@@ -24,8 +23,6 @@ void shell() {
         if (strcmp(command, "help") == 0) {
             uart_puts("help\t\t: print this help menu\n");
             uart_puts("load\t\t: load user program and run in el0\n");
-            uart_puts("close_timer\t: don't display core timer info\n");
-            uart_puts("open_timer\t: display core timer info\n");
             uart_puts("info\t\t: print machine information from mailbox\n");
             uart_puts("reboot\t\t: reboot the device\n");
             uart_puts("ls\t\t: list all files in the initramfs\n");
@@ -42,10 +39,6 @@ void shell() {
                 void (*load_user_program)(void) = (void (*)())address;
                 load_user_program();
             }
-        } else if (strcmp(command, "close_timer") == 0) {
-            print_core_timer_info = 0;
-        } else if (strcmp(command, "open_timer") == 0) {
-            print_core_timer_info = 1;
         } else if (strcmp(command, "info") == 0) {
             mbox_get_board_revision();
             mbox_get_arm_memory();
@@ -64,6 +57,5 @@ void shell() {
 }
 
 void main() {
-    uart_init();
     shell();
 }

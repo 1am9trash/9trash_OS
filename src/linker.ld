@@ -10,8 +10,5 @@ SECTIONS
     *(.bss .bss.*)
     __bss_end = .;
   }
-  __heap_start = .;
-  . = ALIGN(0x1000);
-  __heap_end = .;
 }
 __bss_size = (__bss_end - __bss_start) >> 3;

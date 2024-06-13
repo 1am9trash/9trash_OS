@@ -3,10 +3,14 @@
 
 #include "stdint.h"
 
-void go_el0(void);
-void core_timer_handler(void);
+uint32_t get_el();
+void check_el(uint32_t el);
 
-void exception_entry();
-void lower_irq_router();
+void enable_interrupt();
+void disable_interrupt();
+
+void default_exception_handler();
+void sync_handler();
+void irq_handler();
 
 #endif
