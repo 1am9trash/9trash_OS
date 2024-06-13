@@ -1,99 +1,57 @@
-Lab 3
+Lab 3.5
 ---
 
-## Target
-- 處理 exception 。
-- 處理 interrupt ， 了解 peripherals 如何 interrupt CPU 。
-- Understand how to multiplex a timer.
-- Understand how to concurrently handle I/O devices.
-
-## Exception
-
-##### Exception Handling
-- `el0`: application
-- `el1`: rich OS
-- `el2`: hypervisor
-- `el3`: firmware
-
-##### `el2` to `el1`
-- `hcr_el2`: Hypervisor Configuration Register
-  - 用來控制 hypervisor configuration 。
-  - `E2H` (bit 31): 用來控制 `el1` 中使用 `aarch64`(1) 或 `aarch32`(0) 。
-- `spsr_el2`: Saved Program Status Register
-  - 當發生到 `el2` 的 exception 時， 用來儲存 processor state ，包含 `el1h` 、 `el1t` 等。
-  - DAIF (bit 6-9): 用以 disable interrupt 。
-  - M (bit 0-3): current processor mode ， `0b0101` 代表 `EL1h` ，使用 `SP1` Stack Pointer。
-- Implement
-  ```armasm
-  go_el1:
-    mov x0, (1 << 31)         // EL1 uses aarch64
-    msr hcr_el2, x0
-    mov x0, 0x3c5             // EL1h (SPSel = 1) with interrupt disabled
-                              // (0b1111 << 6) | (0b0101 << 0)
-    msr spsr_el2, x0
-    adr x1, set_el1
-    msr elr_el2, x1
-    eret                      // return to EL1
-  
-  set_el1:
-    ldr x1, =0x60000          // set stack pointer 
-    mov sp, x1
-    ret
-  ```
-
-##### `el1` to `el0`
-- `spsr_el1`: Saved Program Status Register
-- Implement
-  ```armasm
-  go_el0:
-    mov x0, 0x0
-    msr spsr_el1, x0
-    adr x1, set_el0
-    msr elr_el1, x1
-    eret                      // return to EL0
-  
-  set_el0:
-    ldr x1, =0x40000          // set stack pointer 
-    mov sp, x1
-    ret
-  ```
-
-##### Exception 跳轉流程
-- `el2`
-  - 開始執行時，默認在 `el2` 。
-  - 初始化 `bss` (可在 `el1` 做) 。
-- `el1`
-  - 設置 exception vector table: 將 table address 放到 `vbar_el1` 。
-  - enable timer 。
-- `el0`
-  - enable uart (可在`el1`做) 。
-  - 執行`main()` 。
-- `eret`
-  - 不同`el`跳轉需使用`eret` 。
-  - 設置`spsr_elx`: 儲存process status 。
-  - 設置`elr_elx`: 決定跳轉後位置 。
-
-## Interrupt
-- 由於將程式放在 `el0` 中執行，因此所有需要權限的操作都要透過interrupt提升 `el` 。
-- interrupt 進入時，會根據 exception vector table 進入 `irq_router()` ，並執行對應的 handler 。
-
-## User Program
-- user program 會被提前編成 `img` 檔，透過 `cpio` 放入file system 。
-- 需要執行特定程式時，透過 lab2 中的 `cpio.c` 找到其位置並跳轉 。
-- 預設的 user program 會 `svc` 三個 exception 後 `ret` 。
+> 在 Lab 3 中，了解 el 概念，實現 exception 跟 interrupt 處理，但後續發現有部分的處理是有問題的，因此 Lab 3.5 目的在於解決這些問題。
 
 ## Concurrent I/O Devices
-- 之前的 uart 是用 hard polling 的方式運行，浪費大量 cpu time ，現在改成 interrupt trigger 。
-- `uart_putc()` 僅會將 data 存到 write queue 中，等到非同步的 uart interrupt 通知可以輸出時，才會真正輸出。
-- 有 uart 輸入時，會產生非同步的 uart interrupt ，將 data 讀到 read queue 中，等到 `uart_putc()` 呼叫時，再從 read queue 中拿 data 。
+- 原實作 
+  - Lab 3 中將 uart 從 hard polling 改成 interrupt trigger 。
+  - 概念是在 uart 發出 interrupt 時，由 exception table 中的 irq handler 捕獲，再交由 uart read/write 內容。
+- 問題
+  - irq exception 有許多種，不單單是 uart interrupt ，理論上應該檢查 register 值，判斷來源再對應處理，但這裡我直接把所有的訊號都當成 uart interrupt 處理，這是第一個問題。
+  - 事實上，這裡我還犯了另一個錯，我並沒有把 uart interrupt 打開，因此 uart 是不會發 interrupt 的，但由於我沒有檢查訊號來源，因此 uart 還是會定期被 trigger (如被 timer interrupt trigger)，因此表現反而可以正常 read/write 。
+- 解決方法
+  - enable/disable interrupt: 為了能收到 uart interrupt ，要開啟 interrupt 。
+    ```c
+    void enable_interrupt() {
+        asm volatile("msr DAIFClr, 0xf");
+    }
+    
+    void disable_interrupt() {
+        asm volatile("msr DAIFSet, 0xf");
+    }
+    ```
+  - irq handler: 根據 `IRQ_PENDING_1` 判斷訊號種類，再行處理。
+    ```c
+    // check whether the interrupt is triggered by mini UART or not
+    if (*IRQ_PENDING_1 & (1 << 29))
+        uart_handler();
+    ```
 
-## Address Layout Info
-- `el2 sp`: `0x80000`
-- `el1 sp`: `0x60000`
-- `el0 sp`: `0x40000`
-- initrd address: `0x8000000`
-- heap: 在 `linker.ld` 宣告，放在 bss 後 。
-- timer queue: 放在heap上，也是唯一使用 heap 的部分，目前尚無 `free()` 的機制，所以記憶體會越用越少 。
+## SVC
+- 問題
+  - 在 Lab 3 中，我們會透過 `svc` 測試 exception handler 是否正常運作。
+  - 理論上， `svc` 在跳轉前，會將 `elr` (exception linking register) 設為當前地址，方便在處理完 exception ，透過 `eret` 跳轉回 `elr` 繼續執行。
+  - 在 Lab 3 中，這是正常執行的，但後續在 exception handler 加上檢查 exception level 的 code 後，發現 `elr` 會被更改，這代表這個值需要自己 handle ，系統不保證保留原值。
+- 解決方法
+  - 在 handler 執行前 `save_all` 儲存 register ，執行後 `load_all` 回復原狀。除了 general register 外，另外儲存 `elr` 跟 `spsr` 。
+    ```armasm
+    .macro save_all
+      sub sp, sp, 16 * 17
+      // ...
+      mrs x22, elr_el1
+      mrs x23, spsr_el1
+      stp x22, x23, [sp, #16 * 16]
+    .endm
+
+    .macro load_all
+      ldp x22, x23, [sp, #16 * 16]
+      msr elr_el1, x22
+      msr spsr_el1, x23
+      // ...
+      add sp, sp, 16 * 17
+    .endm
+    ```
 
 ## Makefile
 ```sh
