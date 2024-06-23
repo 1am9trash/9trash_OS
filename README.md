@@ -28,7 +28,7 @@ Lab 4
 
 ## Reserved Memory
 - 在 OS 中，有很多 memory 是早已被系統使用的，不能被 buddy system 分配出去，因此初始化時要進行保留(把 state 設為 `INUSE`)，以避免後續系統 memory 被覆蓋。
-- 以下事實作中保留的 address:
+- 以下是實作中保留的 address:
   - `0` - `0x1000`: Spin tables for multicore boot 。
   - `0x1000` - `0x80000`: Kernel Image 。
   - `CPIO_BASE` - `CPIO_BASE + 72000`: Initramfs 。
