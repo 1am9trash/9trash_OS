@@ -27,6 +27,7 @@ _start:
   bl go_el1
   bl set_exception_vector_table
   bl uart_init
+  bl memory_init
 
   bl go_el0                 // make program run in el0
   bl main

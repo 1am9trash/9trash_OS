@@ -150,6 +150,9 @@ void uart_hex(uint32_t d, int prefix) {
 }
 
 void uart_hex_long(uint64_t d, int prefix) {
-    uart_hex(d >> 32, prefix);
-    uart_hex(d << 32 >> 32, 0);
+    if ((d >> 32) != 0) {
+        uart_hex(d >> 32, prefix);
+        uart_hex(d << 32 >> 32, 0);
+    } else
+        uart_hex(d, prefix);
 }

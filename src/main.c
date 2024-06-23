@@ -5,6 +5,7 @@
 #include "cpio.h"
 #include "utils.h"
 #include "exception.h"
+#include "memory.h"
 
 void shell() {
     uart_puts("\n");
@@ -27,6 +28,8 @@ void shell() {
             uart_puts("reboot\t\t: reboot the device\n");
             uart_puts("ls\t\t: list all files in the initramfs\n");
             uart_puts("cat\t\t: print the content of a file\n");
+            uart_puts("buddy\t\t: test to allocate/free pages\n\n");
+            uart_puts("dynamic\t\t: test to allocate/free small chunks\n\n");
         } else if (strcmp(command, "load") == 0) {
             if (cpio_get_file_address("user.img") == (void *)0)
                 uart_puts("file is not found.\n");
@@ -50,6 +53,10 @@ void shell() {
             ls();
         } else if (strcmp(command, "cat") == 0) {
             cat();
+        } else if (strcmp(command, "buddy") == 0) {
+            test_buddy_system();
+        } else if (strcmp(command, "dynamic") == 0) {
+            test_dynamic_alloc();
         } else if (strcmp(command, "") != 0) {
             uart_puts("Command is not found.\n");
         }

@@ -23,3 +23,8 @@ uint32_t convert_endian(uint32_t num) {
     return t[0] | t[1] | t[2] | t[3];
 }
 
+void swap(uint32_t *a, uint32_t *b) {
+    uint32_t tmp = *a;
+    *a = *b;
+    *b = tmp;
+}

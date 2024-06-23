@@ -5,7 +5,7 @@
 
 #define CPIO_BASE 0x8000000
 
-struct cpio_newc_header {
+struct CpioNewcHeader {
     char c_magic[6];
     char c_ino[8];
     char c_mode[8];
@@ -22,11 +22,11 @@ struct cpio_newc_header {
     char c_check[8];
 };
 
-char *cpio_get_filename(struct cpio_newc_header *p);
-struct cpio_newc_header *cpio_get_first_file();
-struct cpio_newc_header *cpio_get_next_file(struct cpio_newc_header *p);
+char *cpio_get_filename(struct CpioNewcHeader *p);
+struct CpioNewcHeader *cpio_get_first_file();
+struct CpioNewcHeader *cpio_get_next_file(struct CpioNewcHeader *p);
 void *cpio_get_file_address(char *filename);
-void cpio_read_file(struct cpio_newc_header *p, uint32_t offset, char *buf, uint32_t size);
+void cpio_read_file(struct CpioNewcHeader *p, uint32_t offset, char *buf, uint32_t size);
 void ls();
 void cat();
 
