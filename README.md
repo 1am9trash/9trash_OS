@@ -19,3 +19,4 @@ Self-learning project based on [NYCU OSDI Spring 2022 course](https://oscapstone
   | 2 | filesystem(CPIO) & Device Tree | 2022/08/01 | 1. initial ramdisk with cpio<br>2. dtb handler |
   | 3 | exception & interrupt | 2023/03/20 | 1. run main program in el0<br>2. handle exception and interrupt to el1<br>3. load user program image<br>4. interrupt-trigger uart driver |
   | 3.5 | exception & interrupt | 2024/06/13 | 1. check signal type in irq handler<br>2. handle svc register problem |
+  | 4 | memory allocator | 2024/06/23 | 1. page frame allocator with buddy system<br>2. dynamic memory allocator<br>3. startup allocator |
