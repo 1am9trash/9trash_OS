@@ -1,57 +1,38 @@
-Lab 3.5
+Lab 4
 ---
 
-> 在 Lab 3 中，了解 el 概念，實現 exception 跟 interrupt 處理，但後續發現有部分的處理是有問題的，因此 Lab 3.5 目的在於解決這些問題。
+## Target
+- 完成 page frame allocator (buddy system) 。
+- 完成 dynamic memory allocator 。
+- 完成 startup allocator 。
 
-## Concurrent I/O Devices
-- 原實作 
-  - Lab 3 中將 uart 從 hard polling 改成 interrupt trigger 。
-  - 概念是在 uart 發出 interrupt 時，由 exception table 中的 irq handler 捕獲，再交由 uart read/write 內容。
-- 問題
-  - irq exception 有許多種，不單單是 uart interrupt ，理論上應該檢查 register 值，判斷來源再對應處理，但這裡我直接把所有的訊號都當成 uart interrupt 處理，這是第一個問題。
-  - 事實上，這裡我還犯了另一個錯，我並沒有把 uart interrupt 打開，因此 uart 是不會發 interrupt 的，但由於我沒有檢查訊號來源，因此 uart 還是會定期被 trigger (如被 timer interrupt trigger)，因此表現反而可以正常 read/write 。
-- 解決方法
-  - enable/disable interrupt: 為了能收到 uart interrupt ，要開啟 interrupt 。
-    ```c
-    void enable_interrupt() {
-        asm volatile("msr DAIFClr, 0xf");
-    }
-    
-    void disable_interrupt() {
-        asm volatile("msr DAIFSet, 0xf");
-    }
-    ```
-  - irq handler: 根據 `IRQ_PENDING_1` 判斷訊號種類，再行處理。
-    ```c
-    // check whether the interrupt is triggered by mini UART or not
-    if (*IRQ_PENDING_1 & (1 << 29))
-        uart_handler();
-    ```
+## Page Frame Allocator
+- 切分: 將 memory 切分成 4KB 的 page 。
+- 合併: 將 page 遞迴的合併成包含 `2^n` 個 page 的 frame 。
+  - 圖中 block `0` 跟 block `1` 合併包含 2 個 page 的 frame 。
+  - 圖中 block `4` (包含 page `4` 跟 `5`) 跟 block `6` (包含 page `6` 跟 `7`) 合併成包含 4 個 page 的 frame 。
+  - 因為 buddy system 中保證 memory 連續，因此 block `n` 只能跟 block `n ^ (1 << order)` 合併，合併後 `order + 1` ，包含 `1 << order` 個 page 。
+- Allocate: 在 buddy system 中，會維護 freelist ，紀錄未被使用的 frame ，需要 alloc 時，從中查詢取得。
+  - 會盡量分配與需求相近的的 frame ，如 alloc 3 page ，分配 `order=2 (4 page)` 的 frame ，alloc 100 page ，則分配 `order=7 (128 page)` 的 frame 。
+  - 有時候 freelist 中對應 `order` 的 list 是空的，則會找更高等級且不為空的 list ，將其 frame 分解，再進行 alloc 。
+- Release: 當 release frame 時會重新記錄回 freelist ，若能跟 buddy block 合併，則會合併致不能合併為止。
 
-## SVC
-- 問題
-  - 在 Lab 3 中，我們會透過 `svc` 測試 exception handler 是否正常運作。
-  - 理論上， `svc` 在跳轉前，會將 `elr` (exception linking register) 設為當前地址，方便在處理完 exception ，透過 `eret` 跳轉回 `elr` 繼續執行。
-  - 在 Lab 3 中，這是正常執行的，但後續在 exception handler 加上檢查 exception level 的 code 後，發現 `elr` 會被更改，這代表這個值需要自己 handle ，系統不保證保留原值。
-- 解決方法
-  - 在 handler 執行前 `save_all` 儲存 register ，執行後 `load_all` 回復原狀。除了 general register 外，另外儲存 `elr` 跟 `spsr` 。
-    ```armasm
-    .macro save_all
-      sub sp, sp, 16 * 17
-      // ...
-      mrs x22, elr_el1
-      mrs x23, spsr_el1
-      stp x22, x23, [sp, #16 * 16]
-    .endm
+![](imgs/buddy.svg)
 
-    .macro load_all
-      ldp x22, x23, [sp, #16 * 16]
-      msr elr_el1, x22
-      msr spsr_el1, x23
-      // ...
-      add sp, sp, 16 * 17
-    .endm
-    ```
+## Dynamic Memory Allocator
+- Page frame allocator 雖然很大程度解決 memory 分配的問題，但每次分配最少都是 4KB ，對小的 alloc 來說相當浪費，因此需要一個 dynamic allcoator 來處理。
+- Dynamic allocator 相當於原本 page 系統上的一個 wrapper ，特別處理 32 、 64 、 128 、 ...... bytes 的大小的 alloc 。
+
+## Startup Allocator
+- Allocator 的 state 需要空間紀錄，如 frame 的 `order` 或是否已被使用的狀態等等，但在 initial allocator 前又沒有辦法分配 memory ，因此額外設立一個 startup allocator ，在 allocator 處理好前直接硬性分配 memory 。
+
+## Reserved Memory
+- 在 OS 中，有很多 memory 是早已被系統使用的，不能被 buddy system 分配出去，因此初始化時要進行保留(把 state 設為 `INUSE`)，以避免後續系統 memory 被覆蓋。
+- 以下事實作中保留的 address:
+  - `0` - `0x1000`: Spin tables for multicore boot 。
+  - `0x1000` - `0x80000`: Kernel Image 。
+  - `CPIO_BASE` - `CPIO_BASE + 72000`: Initramfs 。
+  - `0x6000000` - `0x8000000`: Startup allocator 。
 
 ## Makefile
 ```sh
